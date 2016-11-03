@@ -71,6 +71,121 @@ namespace Sumeru.Flex.RedisClient
 			return ExecuteCommand(elements);
 		}
 
+		/// <summary>
+		/// Wrapper around the Redis 'zadd' command. Add the specified member to the set stored at key providing a score. Specified members that are already a member of this set are ignored. While zadd in Redis permits multiple members to be added at the same time, each with a different score, this current implementation of zadd permits only one member at a time to be added. If key does not exist, a new set is created before adding the specified members.
+		/// </summary>
+		/// <example>
+		/// <code>
+		/// string key = "z1";
+		///	int score = 10;
+		/// string members = "m1";
+		///	CommandResult result = client.zadd(key, score, member);
+		/// </code>
+		/// </example>
+		/// <returns>A CommandResult with Success flag set and RecordsAffected property updated</returns>
+		/// <param name="key">Key that identifies the set. Use proper : separated names for easy identification</param>
+		/// <param name="score">The score associated with the member </param>
+		/// <param name="member">Typically a set will contain references to primary key id's which are then retrieved using a <see cref="get(string)"/>  or <see cref="GetEntity{T}"/>  or <see cref="GetEntities{T}"/></param>
+		public CommandResult zadd(string key, int score, string member)
+		{
+			List<string> elements = new List<string>();
+			elements.Add("zadd");
+			elements.Add(key);
+			elements.Add(score.ToString());
+			elements.Add(member);
+			return ExecuteCommand(elements);
+		}
+
+		/// <summary>
+		/// The list of values that needs to be searched on through autocomplete should be added through AutocompleteAdd. The provided AutocompleteItem is serialized to the format `lowercase:original:id` in order to enable a case-insensitive auto-complete search experience. 
+		/// </summary>
+		/// <example>
+		/// <code>
+		/// string key = "collector:names";
+		/// AutocompleteItem item1 = new AutocompleteItem { value = "Mohan", id = "1" };
+		/// AutocompleteItem item2 = new AutocompleteItem { value = "Mohit", id = "2" };
+		/// AutocompleteItem item3 = new AutocompleteItem { value = "Manmohan", id = "3" };
+		///
+		/// List<AutocompleteItem> items = new List<AutocompleteItem>();
+		/// items.Add(item1);
+		///	items.Add(item2);
+		///	items.Add(item3);
+		/// 
+		///	CommandResult result = client.AutocompleteAdd(key, items);
+		/// </code>
+		/// </example>
+		/// <returns>A CommandResult with Success flag set and RecordsAffected property updated</returns>
+		/// <param name="index">The name of the auto-complete list. Best stored in typical : separated format.</param>
+		/// <param name="members">The list itself that is to be searched on. However for sake of object simplicity, it is returned as an AutoComplete object list with ID included. </param>
+		public CommandResult AutocompleteAdd(string index, List<AutocompleteItem> members)
+		{
+			List<string> elements = new List<string>();
+			elements.Add("zadd");
+			elements.Add(index);
+
+			foreach (AutocompleteItem member in members)
+			{
+				StringBuilder serializedAutocompleteItem = new StringBuilder();
+				serializedAutocompleteItem.Append(member.value.ToLower()); // this takes care that if some values are added capitalized and some small, the comparison happens on all lower case basis. The value is stored as `normalized:original:id` and will be handled transparently during retrieval so AutocompleteItem is returned 
+				serializedAutocompleteItem.Append(":");
+				serializedAutocompleteItem.Append(member.value);
+				serializedAutocompleteItem.Append(":");
+				serializedAutocompleteItem.Append(member.id);
+				elements.Add("0");
+				elements.Add(serializedAutocompleteItem.ToString());
+			}
+			return ExecuteCommand(elements);
+		}
+
+		/// <summary>
+		/// Given an index and a search string, it returns a list of matching auto-completes with the id attached. 
+		/// </summary>
+		/// <example>
+		/// <code>
+		/// 
+		/// string index = "collector:names";
+		/// string searchString = "Mo";
+		/// 
+		/// List<AutocompleteItem> items = client.AutocompleteSearch(index, searchString);
+		///	
+		/// foreach (var item in items)
+		///	{
+		///		Console.WriteLine(item.value + '|' + item.id);
+		///	}
+		/// 
+		/// </code>
+		/// </example>
+		/// <returns>List of AutocompleteItem</returns></returns>
+		/// <param name="index">Name of index to retrieve from</param>
+		/// <param name="searchString">Search string.</param>
+		public List<AutocompleteItem> AutocompleteSearch(string index, string searchString)
+		{
+			searchString = searchString.ToLower();
+			List<string> elements = new List<string>();
+			elements.Add("zrangebylex");
+			elements.Add(index);
+			string start = "[" + searchString;
+			elements.Add(start);
+			string end = start + ' '; //the final bytestream needs a hex 255. that cannot be added as a string, it can only be added as a byte. However, Redistranslation requires the number following the $ to contain the number of bytes. So this space is added, only to be replaced a few lines later with hex 255. This is to suit Redis syntax.
+			elements.Add(end); 
+			ReSPTranslator translator = new ReSPTranslator();
+			byte[] msg = translator.TranslateToRedis(elements);
+			int len = msg.Length;
+			msg[len-3] = (byte)0xff; //the hex 255 replaces the space that was earlier added. This is to suit Redis syntax, this is just some byte manipulation that has to be done.
+			byte[] ReSPFromRedis = manager.SendToRedis(msg);
+			RedisResponse response = translator.TranslateFromRedis(ReSPFromRedis);
+
+			List<AutocompleteItem> items = new List<AutocompleteItem>();
+			foreach (string s in response.listResponse)
+			{
+				string[] t = s.Split(':');
+				AutocompleteItem item = new AutocompleteItem();
+				item.value = t[1]; // since the second field holds the original value (first field had a ToLower conversion)
+				item.id = t[2]; // the third field was stored with the id.
+				items.Add(item);
+			}
+			return items;
+		}
 
 		/// <summary>
 		/// All commands (as opposed to queries) should go through this method.  

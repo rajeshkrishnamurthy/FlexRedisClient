@@ -9,10 +9,10 @@ namespace RedisNetClientSim
 	{
 		public static void Main(String[] args)
 		{
-			string SERVER_IP = "199.43.199.17";
-			int PORT = 9379;
-			//string SERVER_IP = "127.0.0.1";
-			//int PORT = 6379;
+			//string SERVER_IP = "199.43.199.17";
+			//int PORT = 9379;
+			string SERVER_IP = "127.0.0.1";
+			int PORT = 6379;
 			IRedisClient client = new FlexRedisClient(SERVER_IP, PORT);
 
 			// These methods are my stand-in for test methods. 
@@ -34,7 +34,10 @@ namespace RedisNetClientSim
 			//EndTransaction(client);
 			//GetEntities(client);
 			//PrepareForBulkImport();
-			RedisDataImportClient();
+			//RedisDataImportClient();
+			//zadd(client);
+			// AutocompleteAdd(client);
+			AutocompleteSearch(client);
 		}
 
 		private static void set(IRedisClient client)
@@ -51,6 +54,41 @@ namespace RedisNetClientSim
 			List<string> members = SeedData.saddSeed();
 			CommandResult result = client.sadd(key, members);
 			ProcessResult(result);
+		}
+
+		private static void zadd(IRedisClient client)
+		{
+			string key = "z1";
+			int score = 0;
+			string member = "m10";
+			CommandResult result = client.zadd(key, score, member);
+			ProcessResult(result);
+		}
+
+		private static void AutocompleteAdd(IRedisClient client)
+		{
+			string key = "collector:names";
+			AutocompleteItem item1 = new AutocompleteItem { value = "Mohan", id = "1" };
+			AutocompleteItem item2 = new AutocompleteItem { value = "Mohit", id = "2" };
+			AutocompleteItem item3 = new AutocompleteItem { value = "Manmohan", id = "3" };
+
+			List<AutocompleteItem> items = new List<AutocompleteItem>();
+			items.Add(item1);
+			items.Add(item2);
+			items.Add(item3);
+			CommandResult result = client.AutocompleteAdd(key, items);
+			ProcessResult(result);
+		}
+
+		private static void AutocompleteSearch(IRedisClient client)
+		{
+			string index = "collector:names";
+			string searchString = "Mo";
+			List<AutocompleteItem> items = client.AutocompleteSearch(index, searchString);
+			foreach (var item in items)
+			{
+				Console.WriteLine(item.value + '|' + item.id);
+			}
 		}
 
 		private static void SetEntity(IRedisClient client)

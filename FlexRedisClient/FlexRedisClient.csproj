@@ -51,6 +51,7 @@
     <Compile Include="Readers\MinusReader.cs" />
     <Compile Include="Readers\PlusReader.cs" />
     <Compile Include="RedisDataImportHelper.cs" />
+    <Compile Include="AutoCompleteItem.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

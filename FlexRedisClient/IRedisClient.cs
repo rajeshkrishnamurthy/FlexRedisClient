@@ -20,5 +20,8 @@ namespace Sumeru.Flex.RedisClient
 		CommandResult sadd(string key, List<string> members);
 		List<string> sinter(List<string> sets);
 		List<string> sunion(List<string> sets);
-}
+		CommandResult zadd(string key, int score, string member);
+		CommandResult AutocompleteAdd(string index, List<AutocompleteItem> members);
+		List<AutocompleteItem> AutocompleteSearch(string index, string searchString);
+	}
 }

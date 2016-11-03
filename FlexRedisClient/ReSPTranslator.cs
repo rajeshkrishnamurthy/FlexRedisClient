@@ -21,7 +21,7 @@ namespace Sumeru.Flex.RedisClient
 
 			byte[] msg = Encoding.ASCII.GetBytes(bulkArray);
 			return msg;
-		}
+		} 
 
 		internal RedisResponse TranslateFromRedis(byte[] ReSPFromRedis)
 		{
