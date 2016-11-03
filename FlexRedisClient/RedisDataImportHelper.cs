@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace Sumeru.Flex.RedisClient
@@ -90,6 +91,48 @@ namespace Sumeru.Flex.RedisClient
 			Write(command);
 		}
 
+		/// <summary>
+		/// Exactly same input API spec as AutocompleteAdd. Instead of executing, writes out the ReSP to the named file. 
+		/// </summary>
+		/// <example>
+		/// <code>
+		/// RedisDataImportHelper helper = new RedisDataImportHelper("redis-import.txt");
+		/// 
+		/// string index = "collector:names";
+		/// AutocompleteItem item1 = new AutocompleteItem { value = "Mohan", id = "1" };
+		/// AutocompleteItem item2 = new AutocompleteItem { value = "Mohit", id = "2" };
+		/// 
+		/// List<AutocompleteItem> items = new List<AutocompleteItem>();
+		/// items.Add(item1);
+		///	items.Add(item2);
+		///
+		///	helper.AutocompleteAddToFile(index, items);
+		/// </code>
+		/// </example>
+		/// <param name="index">Index.</param>
+		/// <param name="members">Members.</param>
+
+		public void AutocompleteAddToFile(string index, List<AutocompleteItem> members)
+		{
+			List<string> elements = new List<string>();
+			elements.Add("zadd");
+			elements.Add(index);
+
+			foreach (AutocompleteItem member in members)
+			{
+				StringBuilder serializedAutocompleteItem = new StringBuilder();
+				serializedAutocompleteItem.Append(member.value.ToLower()); // this takes care that if some values are added capitalized and some small, the comparison happens on all lower case basis. The value is stored as `normalized:original:id` and will be handled transparently during retrieval so AutocompleteItem is returned 
+				serializedAutocompleteItem.Append(":");
+				serializedAutocompleteItem.Append(member.value);
+				serializedAutocompleteItem.Append(":");
+				serializedAutocompleteItem.Append(member.id);
+				elements.Add("0");
+				elements.Add(serializedAutocompleteItem.ToString());
+			}
+			byte[] command = Convert(elements);
+			Write(command);
+		}
+		                                  
 		byte[] Convert(List<string> elements)
 		{
 			ReSPTranslator translator = new ReSPTranslator();

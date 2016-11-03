@@ -34,10 +34,10 @@ namespace RedisNetClientSim
 			//EndTransaction(client);
 			//GetEntities(client);
 			//PrepareForBulkImport();
-			//RedisDataImportClient();
+			RedisDataImportClient();
 			//zadd(client);
 			// AutocompleteAdd(client);
-			AutocompleteSearch(client);
+			//AutocompleteSearch(client);
 		}
 
 		private static void set(IRedisClient client)
@@ -171,18 +171,29 @@ namespace RedisNetClientSim
 		private static void RedisDataImportClient()
 		{
 			RedisDataImportHelper helper = new RedisDataImportHelper("/Users/Rajesh/Temp/redis-import.txt");
-			helper.setToFile(helper, "key1", "value1");
-			helper.setToFile(helper, "key2", "value2");
-			helper.setToFile(helper, "key3", "value3");
-			string skey = "setkey1";
-			List<string> smembers = new List<string> { "m1", "m2", "m3" };
-			helper.saddToFile(skey, smembers);
-			string entitykey = "entitykey1";
-			Person p = new Person();
-			p.name = "Ram";
-			p.age = 40;
-			p.favouriteBooks = new List<string> { "Book1", "Book2" };
-			helper.SetEntityToFile<Person>(entitykey, p);
+			//helper.setToFile(helper, "key1", "value1");
+			//helper.setToFile(helper, "key2", "value2");
+			//helper.setToFile(helper, "key3", "value3");
+			//string skey = "setkey1";
+			//List<string> smembers = new List<string> { "m1", "m2", "m3" };
+			//helper.saddToFile(skey, smembers);
+			//string entitykey = "entitykey1";
+			//Person p = new Person();
+			//p.name = "Ram";
+			//p.age = 40;
+			//p.favouriteBooks = new List<string> { "Book1", "Book2" };
+			//helper.SetEntityToFile<Person>(entitykey, p);
+			string index = "collector:names";
+			AutocompleteItem item1 = new AutocompleteItem { value = "Mohan", id = "1" };
+			AutocompleteItem item2 = new AutocompleteItem { value = "Mohit", id = "2" };
+			AutocompleteItem item3 = new AutocompleteItem { value = "Manmohan", id = "3" };
+
+			List<AutocompleteItem> items = new List<AutocompleteItem>();
+			items.Add(item1);
+			items.Add(item2);
+			items.Add(item3);
+
+			helper.AutocompleteAddToFile(index, items);
 		}
 	}
 }
