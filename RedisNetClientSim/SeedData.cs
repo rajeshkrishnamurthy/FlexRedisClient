@@ -16,8 +16,8 @@ namespace RedisNetClientSim
 		public static Person SeedForSetEntity()
 		{
 			Person p = new Person();
-			p.name = "Prateek";
-			p.age = 18;
+			p.name = null;
+			p.age = 40;
 			p.favouriteBooks = new List<string>();
 			p.favouriteBooks.Add("C# Forever");
 			p.favouriteBooks.Add("Count of Monte Cristo");
@@ -32,16 +32,16 @@ namespace RedisNetClientSim
 		internal static List<string> SeedForGetEntities()
 		{
 			List<string> keys = new List<string>();
-			keys.Add("p1");
-			keys.Add("p2");
+			keys.Add("person:prateek2");
+			keys.Add("person:prateek3");
 			return keys;
 		}
 
 		public static List<string> SeedForSinter()
 		{
 			List<string> sets = new List<string>();
-			sets.Add("index:lead:education:mba");
-			sets.Add("index:lead:status:loggedin");
+			sets.Add("index:lead:firstname:Ram");
+			sets.Add("index:lead:status:documents-approved");
 			return sets;
 		}
 

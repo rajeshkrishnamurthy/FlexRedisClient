@@ -13,7 +13,7 @@ namespace RedisNetClientSim
 			//int PORT = 9379;
 			string SERVER_IP = "127.0.0.1";
 			int PORT = 6379;
-			IRedisClient client = new FlexRedisClient(SERVER_IP, PORT);
+			IRedisClient client = new FlexRedisClient(SERVER_IP, PORT, "RK-");
 
 			// These methods are my stand-in for test methods. 
 			// I have no idea how to write tests on Xamarin Studio and 
@@ -32,9 +32,9 @@ namespace RedisNetClientSim
 			//mget(client);
 			//sunion(client);
 			//EndTransaction(client);
-			//GetEntities(client);
+			GetEntities(client);
 			//PrepareForBulkImport();
-			RedisDataImportClient();
+			//RedisDataImportClient();
 			//zadd(client);
 			// AutocompleteAdd(client);
 			//AutocompleteSearch(client);
@@ -50,7 +50,7 @@ namespace RedisNetClientSim
 
 		private static void sadd(IRedisClient client)
 		{
-			string key = "index:lead:status:documents-approved";
+			string key = "index:lead:firstname:Ram";
 			List<string> members = SeedData.saddSeed();
 			CommandResult result = client.sadd(key, members);
 			ProcessResult(result);
@@ -93,7 +93,7 @@ namespace RedisNetClientSim
 
 		private static void SetEntity(IRedisClient client)
 		{
-			string key = "person:prateek";
+			string key = "person:prateek3";
 			Person p = SeedData.SeedForSetEntity();
  			CommandResult result = client.SetEntity<Person>(key, p);
 			ProcessResult(result);
@@ -108,7 +108,7 @@ namespace RedisNetClientSim
 
 		private static void GetEntity(IRedisClient client)
 		{
-			string key = "Lead:G1";
+			string key = "person:prateek2";
 			Person p = client.GetEntity<Person>(key);
 			Console.WriteLine(p.ToString());
 		}
@@ -170,9 +170,9 @@ namespace RedisNetClientSim
 
 		private static void RedisDataImportClient()
 		{
-			RedisDataImportHelper helper = new RedisDataImportHelper("/Users/Rajesh/Temp/redis-import.txt");
-			//helper.setToFile(helper, "key1", "value1");
-			//helper.setToFile(helper, "key2", "value2");
+         	RedisDataImportHelper helper = new RedisDataImportHelper("/Users/Rajesh/Temp/redis-import.txt");
+			helper.setToFile(helper, "key100", "value100");
+			helper.setToFile(helper, "key2", "value2");
 			//helper.setToFile(helper, "key3", "value3");
 			//string skey = "setkey1";
 			//List<string> smembers = new List<string> { "m1", "m2", "m3" };
@@ -183,17 +183,17 @@ namespace RedisNetClientSim
 			//p.age = 40;
 			//p.favouriteBooks = new List<string> { "Book1", "Book2" };
 			//helper.SetEntityToFile<Person>(entitykey, p);
-			string index = "collector:names";
-			AutocompleteItem item1 = new AutocompleteItem { value = "Mohan", id = "1" };
-			AutocompleteItem item2 = new AutocompleteItem { value = "Mohit", id = "2" };
-			AutocompleteItem item3 = new AutocompleteItem { value = "Manmohan", id = "3" };
+			//string index = "collector:names";
+			//AutocompleteItem item1 = new AutocompleteItem { value = "Mohan", id = "1" };
+			//AutocompleteItem item2 = new AutocompleteItem { value = "Mohit", id = "2" };
+			//AutocompleteItem item3 = new AutocompleteItem { value = "Manmohan", id = "3" };
 
-			List<AutocompleteItem> items = new List<AutocompleteItem>();
-			items.Add(item1);
-			items.Add(item2);
-			items.Add(item3);
+			//List<AutocompleteItem> items = new List<AutocompleteItem>();
+			//items.Add(item1);
+			//items.Add(item2);
+			//items.Add(item3);
 
-			helper.AutocompleteAddToFile(index, items);
+			//helper.AutocompleteAddToFile(index, items);
 		}
 	}
 }

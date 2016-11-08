@@ -9,7 +9,7 @@ namespace Sumeru.Flex.RedisClient
 	public class FlexRedisClient : IRedisClient 
 	{
 		RedisCommunicationManager manager;
-
+		string keyPrefix;
 		/// <summary>
 		/// Initializes a new instance of the FlexRedisClient when a successful connection to the Redis Server is established.
 		/// </summary>
@@ -22,9 +22,10 @@ namespace Sumeru.Flex.RedisClient
 		/// <exception cref="Sumeru.Flex.RedisClient.RedisConnectionException">Thrown when no TCP connection can be established</exception>
 		/// <param name="SERVER_IP">Server ip.</param>
 		/// <param name="PORT_NO">Port no.</param>
-		public FlexRedisClient(string SERVER_IP, int PORT_NO)
+		public FlexRedisClient(string SERVER_IP, int PORT_NO, string key_prefix = "")
 		{
 			manager = new RedisCommunicationManager(SERVER_IP, PORT_NO);
+			keyPrefix = key_prefix;
 		}
 
 		/// <summary>
@@ -42,6 +43,7 @@ namespace Sumeru.Flex.RedisClient
 		/// <param name="value">Value.</param>
 		public CommandResult set(string key, string value)
 		{
+			key = PrefixKey(key);
 			List<string> elements = new List<string>();
 			elements.Add("set");
 			elements.Add(key);
@@ -66,6 +68,7 @@ namespace Sumeru.Flex.RedisClient
 		{
 			List<string> elements = new List<string>();
 			elements.Add("sadd");
+			key = PrefixKey(key);
 			elements.Add(key);
 			elements.AddRange(members);
 			return ExecuteCommand(elements);
@@ -90,6 +93,7 @@ namespace Sumeru.Flex.RedisClient
 		{
 			List<string> elements = new List<string>();
 			elements.Add("zadd");
+			key = PrefixKey(key);
 			elements.Add(key);
 			elements.Add(score.ToString());
 			elements.Add(member);
@@ -121,6 +125,7 @@ namespace Sumeru.Flex.RedisClient
 		{
 			List<string> elements = new List<string>();
 			elements.Add("zadd");
+			index = PrefixKey(index);
 			elements.Add(index);
 
 			foreach (AutocompleteItem member in members)
@@ -163,6 +168,7 @@ namespace Sumeru.Flex.RedisClient
 			searchString = searchString.ToLower();
 			List<string> elements = new List<string>();
 			elements.Add("zrangebylex");
+			index = PrefixKey(index);
 			elements.Add(index);
 			string start = "[" + searchString;
 			elements.Add(start);
@@ -223,9 +229,12 @@ namespace Sumeru.Flex.RedisClient
 		public CommandResult SetEntity<T>(string key, T entity) where T:class
 		{
 			Contract.Requires((key != null && key != ""), "Key cannot be empty or null");
-			string json = JsonConvert.SerializeObject(entity);
+			JsonSerializerSettings settings = new JsonSerializerSettings();
+			settings.NullValueHandling = NullValueHandling.Ignore;
+			string json = JsonConvert.SerializeObject(entity, settings);
 			List<string> elements = new List<string>();
 			elements.Add("set");
+			key = PrefixKey(key);
 			elements.Add(key);
 			elements.Add(json);
 			return ExecuteCommand(elements);
@@ -274,6 +283,7 @@ namespace Sumeru.Flex.RedisClient
 
 		public string get(string key)
 		{
+			key = PrefixKey(key);
 			List<string> elements = new List<string>() { "get", key };
 			ReSPTranslator translator = new ReSPTranslator();
 			byte[] msg = translator.TranslateToRedis(elements);
@@ -297,6 +307,7 @@ namespace Sumeru.Flex.RedisClient
 		/// <param name="T">The type to which data stored in Redis must be cast to</typeparam>
 		public T GetEntity<T>(string key) where T : class
 		{
+			key = PrefixKey(key);
 			List<string> elements = new List<string>() { "get", key };
 			ReSPTranslator translator = new ReSPTranslator();
 			byte[] msg = translator.TranslateToRedis(elements);
@@ -330,6 +341,11 @@ namespace Sumeru.Flex.RedisClient
 		public Dictionary<string, T> GetEntities<T>(List<string> keys) where T : class
 		{
 			List<string> elements = new List<String>() { "mget" };
+
+			for (int i = 0; i < keys.Count; i++)
+			{
+				keys[i] = PrefixKey(keys[i]);
+			}
 			elements.AddRange(keys);
 			ReSPTranslator translator = new ReSPTranslator();
 			byte[] msg = translator.TranslateToRedis(elements);
@@ -373,6 +389,12 @@ namespace Sumeru.Flex.RedisClient
 		public List<string> sinter(List<string> sets)
 		{
 			List<String> elements = new List<String>() { "sinter" };
+
+			for (int i = 0; i < sets.Count; i++)
+			{
+				sets[i] = PrefixKey(sets[i]);
+			}
+
 			elements.AddRange(sets);
 			ReSPTranslator translator = new ReSPTranslator();
 			byte[] msg = translator.TranslateToRedis(elements);
@@ -395,6 +417,11 @@ namespace Sumeru.Flex.RedisClient
 		public List<string> sunion(List<string> sets)
 		{
 			List<String> elements = new List<String>() { "sunion" };
+
+			for (int i = 0; i < sets.Count; i++)
+			{
+				sets[i] = PrefixKey(sets[i]);
+			}
 			elements.AddRange(sets);
 			ReSPTranslator translator = new ReSPTranslator();
 			byte[] msg = translator.TranslateToRedis(elements);
@@ -406,6 +433,11 @@ namespace Sumeru.Flex.RedisClient
 		private Dictionary<string, string> mget(List<string> keys)
 		{
 			List<string> elements = new List<String>() { "mget" };
+
+			for (int i = 0; i < keys.Count; i++)
+			{
+				keys[i] = PrefixKey(keys[i]);
+			}
 			elements.AddRange(keys);
 			ReSPTranslator translator = new ReSPTranslator();
 			byte[] msg = translator.TranslateToRedis(elements);
@@ -462,5 +494,10 @@ namespace Sumeru.Flex.RedisClient
 		//{
 		//	throw new NotImplementedException();
 		//}
+
+		string PrefixKey(string key)
+		{
+			return keyPrefix + key;
+		}
 	}
 }
