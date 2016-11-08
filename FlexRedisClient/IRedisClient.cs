@@ -23,5 +23,7 @@ namespace Sumeru.Flex.RedisClient
 		CommandResult zadd(string key, int score, string member);
 		CommandResult AutocompleteAdd(string index, List<AutocompleteItem> members);
 		List<AutocompleteItem> AutocompleteSearch(string index, string searchString);
+		CommandResult TwoWayMapAdd(string key, List<KeyValuePair<string, string>> mapData);
+		CommandResult TwoWayMapRemove(string key, List<KeyValuePair<string, string>> mapData);
 	}
 }

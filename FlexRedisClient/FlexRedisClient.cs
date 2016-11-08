@@ -11,7 +11,7 @@ namespace Sumeru.Flex.RedisClient
 		RedisCommunicationManager manager;
 		string keyPrefix;
 		/// <summary>
-		/// Initializes a new instance of the FlexRedisClient when a successful connection to the Redis Server is established.
+		/// Initializes a new instance of the FlexRedisClient when a successful connection to the Redis Server is established.  
 		/// </summary>
 		/// <example>
 		/// <code>
@@ -22,6 +22,7 @@ namespace Sumeru.Flex.RedisClient
 		/// <exception cref="Sumeru.Flex.RedisClient.RedisConnectionException">Thrown when no TCP connection can be established</exception>
 		/// <param name="SERVER_IP">Server ip.</param>
 		/// <param name="PORT_NO">Port no.</param>
+		/// <param name="key_prefix">A key prefix can optionally be provided. This is useful in dev and test when multiple devs may be trying out stuff against the same Redis server instance. All keys are automatically prefixed with this key param name="key_prefix".</param>
 		public FlexRedisClient(string SERVER_IP, int PORT_NO, string key_prefix = "")
 		{
 			manager = new RedisCommunicationManager(SERVER_IP, PORT_NO);
@@ -194,22 +195,6 @@ namespace Sumeru.Flex.RedisClient
 		}
 
 		/// <summary>
-		/// All commands (as opposed to queries) should go through this method.  
-		/// </summary>
-		/// <returns>CommandResult.Success will indicate whether the command succeeded or failed. CommandResult.RecordsAffected will give more info.  
-		/// </returns>
-		/// <param name="elements">For > set key value, this would contain 3 elements with "set", "key" and "value"</param></param>
-		private CommandResult ExecuteCommand(List<string> elements)
-		{
-			ReSPTranslator translator = new ReSPTranslator();
-			byte[] msg = translator.TranslateToRedis(elements);
-			byte[] response = manager.SendToRedis(msg);
-			CommandResult Cr = ParseResponse(response);
-			return Cr;
-		}
-
-
-		/// <summary>
 		/// Serializes object as a JSON and stores the JSON as the value against the given key.
 		/// </summary>
 		/// <example>
@@ -237,6 +222,50 @@ namespace Sumeru.Flex.RedisClient
 			key = PrefixKey(key);
 			elements.Add(key);
 			elements.Add(json);
+			return ExecuteCommand(elements);
+		}
+
+		/// <summary>
+		/// Mappings between entities can be maintained by Redis and is an innovative use of Redis' sorted set. Given a key k1 and two strings z1 and z2, this method produces zadd k1 0 z1:z3 0 z2:z1. Any number of such string pairs can be provided as a list of KeyValuePairs.
+		/// </summary>
+		/// <returns>The way map add.</returns>
+		/// <param name="key">The key of the sorted set.</param>
+		/// <param name="mapData">IDs between whom mappings are to be established are provided as a list of keyvaluepairs.  </param>
+		public CommandResult TwoWayMapAdd(string key, List<KeyValuePair<string, string>> mapData)
+		{
+			List<string> elements = new List<string>();
+			elements.Add("zadd");
+			key = PrefixKey(key);
+			elements.Add(key);
+
+			foreach (KeyValuePair<string, string> kv in mapData)
+			{
+				elements.Add("0");
+				elements.Add(kv.Key + ':' + kv.Value);
+				elements.Add("0");
+				elements.Add(kv.Value + ':' + kv.Key);
+			}
+			return ExecuteCommand(elements);
+		}
+
+		/// <summary>
+		/// Reverses the effect of <see cref="TwoWayMapAdd"/> for the given key and members. Both way mappings will be removed. Given a key k1 and strings z1 and z2, this method generates 'zrem k1 z1:z2 z2:z1'
+		/// </summary>
+		/// <returns>The way map remove.</returns>
+		/// <param name="key">Key of the sorted set.</param>
+		/// <param name="mapData">Members to remove from the mapping. </param>
+		public CommandResult TwoWayMapRemove(string key, List<KeyValuePair<string, string>> mapData)
+		{
+			List<string> elements = new List<string>();
+			elements.Add("zrem");
+			key = PrefixKey(key);
+			elements.Add(key);
+
+			foreach (KeyValuePair<string, string> kv in mapData)
+			{
+				elements.Add(kv.Key + ':' + kv.Value);
+				elements.Add(kv.Value + ':' + kv.Key);
+			}
 			return ExecuteCommand(elements);
 		}
 
@@ -498,6 +527,21 @@ namespace Sumeru.Flex.RedisClient
 		string PrefixKey(string key)
 		{
 			return keyPrefix + key;
+		}
+
+		/// <summary>
+		/// All commands (as opposed to queries) should go through this method.  
+		/// </summary>
+		/// <returns>CommandResult.Success will indicate whether the command succeeded or failed. CommandResult.RecordsAffected will give more info.  
+		/// </returns>
+		/// <param name="elements">For > set key value, this would contain 3 elements with "set", "key" and "value"</param></param>
+		private CommandResult ExecuteCommand(List<string> elements)
+		{
+			ReSPTranslator translator = new ReSPTranslator();
+			byte[] msg = translator.TranslateToRedis(elements);
+			byte[] response = manager.SendToRedis(msg);
+			CommandResult Cr = ParseResponse(response);
+			return Cr;
 		}
 	}
 }

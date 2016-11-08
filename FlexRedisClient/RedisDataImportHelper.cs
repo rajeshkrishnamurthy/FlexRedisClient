@@ -132,6 +132,24 @@ namespace Sumeru.Flex.RedisClient
 			byte[] command = Convert(elements);
 			Write(command);
 		}
+
+		public void TwoWayMapAdd(string key, List<KeyValuePair<string, string>> mapData)
+		{
+			List<string> elements = new List<string>();
+			elements.Add("zadd");
+			elements.Add(key);
+
+			foreach (KeyValuePair<string, string> kv in mapData)
+			{
+				elements.Add("0");
+				elements.Add(kv.Key + ':' + kv.Value);
+				elements.Add("0");
+				elements.Add(kv.Value + ':' + kv.Key);
+			}
+
+			byte[] command = Convert(elements);
+			Write(command);
+		}
 		                                  
 		byte[] Convert(List<string> elements)
 		{

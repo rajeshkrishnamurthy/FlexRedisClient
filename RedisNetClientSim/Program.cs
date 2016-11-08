@@ -32,12 +32,14 @@ namespace RedisNetClientSim
 			//mget(client);
 			//sunion(client);
 			//EndTransaction(client);
-			GetEntities(client);
+			//GetEntities(client);
 			//PrepareForBulkImport();
 			//RedisDataImportClient();
 			//zadd(client);
 			// AutocompleteAdd(client);
 			//AutocompleteSearch(client);
+			//TwoWayMapAdd(client);
+			TwoWayMapRemove(client);
 		}
 
 		private static void set(IRedisClient client)
@@ -130,6 +132,32 @@ namespace RedisNetClientSim
 			}
 		}
 
+		static void TwoWayMapAdd(IRedisClient client)
+		{
+			string key = "dfb:map";
+			List<KeyValuePair<string, string>> mapData = new List<KeyValuePair<string, string>>();
+
+			KeyValuePair<string, string> kv1 = new KeyValuePair<string, string>("g1", "f1");
+			KeyValuePair<string, string> kv2 = new KeyValuePair<string, string>("g1", "f2");
+
+			mapData.Add(kv1);
+			mapData.Add(kv2);
+			CommandResult result = client.TwoWayMapAdd(key, mapData);
+			ProcessResult(result);
+		}
+
+		static void TwoWayMapRemove(IRedisClient client)
+		{
+			string key = "dfb:map";
+			List<KeyValuePair<string, string>> mapData = new List<KeyValuePair<string, string>>();
+
+			KeyValuePair<string, string> kv1 = new KeyValuePair<string, string>("g1", "f1");
+
+			mapData.Add(kv1);
+			CommandResult result = client.TwoWayMapRemove(key, mapData);
+			ProcessResult(result);
+		}
+
 		static void sunion(IRedisClient client)
 		{
 			List<string> sets = SeedData.SeedForSunion();
@@ -171,8 +199,18 @@ namespace RedisNetClientSim
 		private static void RedisDataImportClient()
 		{
          	RedisDataImportHelper helper = new RedisDataImportHelper("/Users/Rajesh/Temp/redis-import.txt");
-			helper.setToFile(helper, "key100", "value100");
-			helper.setToFile(helper, "key2", "value2");
+			string key = "dfb:map";
+			List<KeyValuePair<string, string>> mapData = new List<KeyValuePair<string, string>>();
+
+			KeyValuePair<string, string> kv1 = new KeyValuePair<string, string>("g1", "f1");
+			KeyValuePair<string, string> kv2 = new KeyValuePair<string, string>("g1", "f2");
+
+			mapData.Add(kv1);
+			mapData.Add(kv2);
+
+			helper.TwoWayMapAdd(key, mapData);
+			//helper.setToFile(helper, "key100", "value100");
+			//helper.setToFile(helper, "key2", "value2");
 			//helper.setToFile(helper, "key3", "value3");
 			//string skey = "setkey1";
 			//List<string> smembers = new List<string> { "m1", "m2", "m3" };
