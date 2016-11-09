@@ -270,6 +270,118 @@ namespace Sumeru.Flex.RedisClient
 		}
 
 		/// <summary>
+		/// Indexes are FlexRedisClient wrappers which mimic the creation of an index (these are then used by 'sinter' for simulating SQL joins). Maintaining these indexes using native Redis commands involves manipulating sets and hashes. This method masks that complexity and maintains indexes with the required level of data integrity. IMPORTANT: This assumes that within a given indexname, a key occurs only once. eg. if indexing on firstname, then a key can have only one firstname. This is not the same as unique index though, as multiple keys can have the same first name!  
+		/// </summary>
+		/// <example>
+		/// <code>
+		/// string indexName = "index:lead:firstname";
+		/// string indexLeaf = "dhanya";
+		/// string keyReference = "k50";
+		/// client.AddIndex(indexName, indexLeaf, keyReference);
+		/// </code>
+		/// </example>
+		/// <param name="indexName">In a key of index:lead:firstname:name1, index:lead:firstname would be the index name</param>
+		/// <param name="indexLeaf">In a key of index:lead:firstname:name1, name1 would be the leaf</param>
+		/// <param name="keyReference">The key reference that is to be stored as the value.</param>
+		public void AddIndex(string indexName, string indexLeaf, string keyReference)
+		{
+			char nameLeafDelimiter = ':'; //Left un-editable on purpose.
+
+			// Get the old index that had this key reference
+			List<string> hashOldElement = new List<string>(); 
+			hashOldElement.Add("hget");
+			string hashRedisKey = "ih:" + indexName;
+			hashOldElement.Add(hashRedisKey);
+			hashOldElement.Add(keyReference);
+			ReSPTranslator translator = new ReSPTranslator();
+			byte[] msg = translator.TranslateToRedis(hashOldElement);
+			byte[] ReSPFromRedis = manager.SendToRedis(msg);
+			string oldIndexLeaf = translator.TranslateFromRedis(ReSPFromRedis).strResponse;
+
+			List<string> indexOldElement = new List<string>();
+			// Remove the keyReference from the old index
+			if (oldIndexLeaf != null)
+			{
+				indexOldElement.Add("srem");
+				indexOldElement.Add(indexName + nameLeafDelimiter + oldIndexLeaf);
+				indexOldElement.Add(keyReference);
+
+				hashOldElement.Clear();
+				hashOldElement.Add("hdel");
+				hashOldElement.Add(hashRedisKey);
+				hashOldElement.Add(keyReference);
+			}
+	
+			// Add the key reference to the new index
+			List<string> indexNewElement = new List<string>();
+			string key = indexName + nameLeafDelimiter + indexLeaf;
+			indexNewElement.Add("sadd");
+			indexNewElement.Add(key);
+			indexNewElement.Add(keyReference);
+
+			// Create an internal hash to connect up the key reference and the indexLeaf. The hash key is based on indexName
+			List<string> hashNewElement = new List<string>();
+			hashNewElement.Add("hset");
+			hashNewElement.Add(hashRedisKey);
+			hashNewElement.Add(keyReference);
+			hashNewElement.Add(indexLeaf); //The keyReference is a key in the hash, and its value is the indexLeaf. For eg. this tells us that a key k1 is mapped to a specific leaf say 'Amitabh' in the hint:lead:firstname index.
+
+			StartTransaction();
+
+			if (indexOldElement.Count > 0)
+			{
+				ExecuteCommand(hashOldElement); // Remove the hash reference that was maintained for the index
+				ExecuteCommand(indexOldElement); // Remove past references of key reference against given index Name
+			}
+			ExecuteCommand(hashNewElement); // Create internal hash for the provided index
+			ExecuteCommand(indexNewElement); // Add index for provided index
+
+			RunTransaction();
+		}
+
+		/// <summary>
+		/// Removes the index for given index name, leaf and key reference
+		/// </summary>
+		/// <example>
+		/// <code>
+		/// string indexName = "index:lead:firstname";
+		/// string indexLeaf = "dhanya3";
+		/// string keyReference = "k5";
+		/// client.RemoveIndex(indexName, indexLeaf, keyReference);
+		/// </code>
+		/// </example>
+		/// <param name="indexName">Index name.</param>
+		/// <param name="indexLeaf">Index leaf.</param>
+		/// <param name="keyReference">Key reference.</param>
+		public void RemoveIndex(string indexName, string indexLeaf, string keyReference)
+		{
+			Contract.Requires(indexName != null, "Index name cannot be null");
+			Contract.Requires(indexLeaf != null, "Index leaf cannot be null");
+			Contract.Requires(keyReference != null, "Key Reference cannot be null");
+
+			char nameLeafDelimiter = ':'; //Left un-editable on purpose.
+
+			List<string> hashElement = new List<string>();
+			List<string> indexElement = new List<string>();
+			// Remove the keyReference from the index
+			indexElement.Add("srem");
+			indexElement.Add(indexName + nameLeafDelimiter + indexLeaf);
+			indexElement.Add(keyReference);
+
+			// To remove the key reference from the hash
+			hashElement.Clear();
+			hashElement.Add("hdel");
+			string hashRedisKey = "ih:" + indexName;
+			hashElement.Add(hashRedisKey);
+			hashElement.Add(keyReference);
+
+			StartTransaction();
+			ExecuteCommand(indexElement);
+			ExecuteCommand(hashElement);
+			RunTransaction();
+		}
+
+		/// <summary>
 		/// Wrapper around the 'multi' command of Redis. Marks the start of a transaction block. Subsequent commands will be queued until <see cref="RunTransaction"/> or <see cref="CancelTransaction"/> is executed.
 		/// </summary>
 		/// <example><code>client.StartTransaction()</code></example>
@@ -320,6 +432,8 @@ namespace Sumeru.Flex.RedisClient
 			RedisResponse response = translator.TranslateFromRedis(ReSPFromRedis);
 			return response.strResponse;
 		}
+
+
 
 		/// <summary>
 		/// Given a key, deserializes and returns the object stored against the key. The supplied class T must match the object stored.

@@ -25,5 +25,7 @@ namespace Sumeru.Flex.RedisClient
 		List<AutocompleteItem> AutocompleteSearch(string index, string searchString);
 		CommandResult TwoWayMapAdd(string key, List<KeyValuePair<string, string>> mapData);
 		CommandResult TwoWayMapRemove(string key, List<KeyValuePair<string, string>> mapData);
+		void AddIndex(string indexName, string indexLeaf, string keyReference);
+		void RemoveIndex(string indexName, string indexLeaf, string keyReference);
 	}
 }

@@ -39,7 +39,9 @@ namespace RedisNetClientSim
 			// AutocompleteAdd(client);
 			//AutocompleteSearch(client);
 			//TwoWayMapAdd(client);
-			TwoWayMapRemove(client);
+			//TwoWayMapRemove(client);
+			// AddIndex(client);
+			RemoveIndex(client);
 		}
 
 		private static void set(IRedisClient client)
@@ -156,6 +158,22 @@ namespace RedisNetClientSim
 			mapData.Add(kv1);
 			CommandResult result = client.TwoWayMapRemove(key, mapData);
 			ProcessResult(result);
+		}
+
+		static void AddIndex(IRedisClient client)
+		{
+			string indexName = "index:lead:firstname";
+			string indexLeaf = "dhanya3";
+			string keyReference = "k5";
+			client.AddIndex(indexName, indexLeaf, keyReference);
+		}
+
+		static void RemoveIndex(IRedisClient client)
+		{
+			string indexName = "index:lead:firstname";
+			string indexLeaf = "dhanya3";
+			string keyReference = "k5";
+			client.RemoveIndex(indexName, indexLeaf, keyReference);
 		}
 
 		static void sunion(IRedisClient client)
